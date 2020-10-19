@@ -40,7 +40,7 @@ class CosmicRayEnergyEstimator():
         return probabilities / np.sum(probabilities)
 
     def draw_plots(self, zenith):
-        cr_energy_bins = np.arange(16, 20., .5)
+        cr_energy_bins = np.arange(15, 20., .5)
         mu_energies = np.arange(15, 19, .1)
         cr_energy_probabilities = np.zeros((len(cr_energy_bins), len(mu_energies)))
         cr_spectrum = np.zeros_like(cr_energy_bins)
@@ -54,7 +54,7 @@ class CosmicRayEnergyEstimator():
         fig1 = plt.figure(figsize=(8, 8))
         ax1_1 = fig1.add_subplot(2, 2, (1, 2))
         ax1_1.grid()
-        ax1_1.set_yscale('log')
+        # ax1_1.set_yscale('log')
         ax1_1.set_ylim([.01, 1.1])
         ax1_1.set_xlabel(r'$log_{10}(E_\mu/eV)$')
         ax1_1.set_ylabel(r'$p(E_{CR}|E_\mu)$')

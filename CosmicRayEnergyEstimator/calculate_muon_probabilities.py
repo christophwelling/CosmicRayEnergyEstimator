@@ -39,7 +39,7 @@ mceq = MCEq.core.MCEqRun(
     primary_model=(crflux.models.HillasGaisser2012, 'H3a'),
     theta_deg=85.
 )
-energies = np.power(10., np.arange(16., 20., .5))
+energies = np.power(10., np.arange(15., 20., .5))
 zenith_angles = (np.arange(0, 90, args.delta_zenith) + .5 * args.delta_zenith) * units.deg
 
 h_grid = np.linspace(50 * 1e3 * 1e2, 0, 500)    # altitudes from 0 to 50 km (in cm)
