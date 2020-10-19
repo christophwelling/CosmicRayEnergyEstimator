@@ -58,10 +58,8 @@ ax1_2.set_xscale('log')
 ax1_2.set_yscale('log')
 ax1_2.set_xlabel(r'$E_{CR} [eV]$')
 ax1_2.set_ylabel(r'$\Phi (E_{CR})$')
-# ax1_2.set_ylim([1.e-35, .5])
 ax1_2.grid()
 cr_spectrum = crflux.models.HillasGaisser2012().total_flux(mceq.e_grid)
-# cr_spectrum /= np.sum(cr_spectrum)
 output_data['cr_spectrum'] = cr_spectrum
 muon_fluxes = np.zeros((len(zenith_angles), len(mceq.e_grid)))
 ax1_2.plot(mceq.e_grid * units.GeV, cr_spectrum)
@@ -70,7 +68,6 @@ for i_zenith, zenith in enumerate(zenith_angles):
     mceq.solve(int_grid=X_grid)
     muon_flux = (mceq.get_solution('mu+', grid_idx=alt_idx) +
                  mceq.get_solution('mu-', grid_idx=alt_idx))
-    # muon_flux /= np.sum(muon_flux)
     label = r'$\theta=%.1f ^\circ$' % (zenith / units.deg)
     ax1_1.plot(mceq.e_grid * units.GeV, muon_flux, label=label, color='C{}'.format(i_zenith))
     muon_fluxes[i_zenith] = muon_flux

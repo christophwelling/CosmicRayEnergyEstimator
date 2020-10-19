@@ -11,7 +11,7 @@ parser.add_argument(
     '--cr_primary',
     type=str,
     default='proton',
-    help='Assumed particle type of the primary cosmic ray. Options are proton and iron'
+    help='Assumed particle type of the primary cosmic ray. Options are proton, helium, oxygen and iron'
 )
 parser.add_argument(
     '--delta_zenith',
@@ -41,6 +41,13 @@ mceq = MCEq.core.MCEqRun(
 )
 energies = np.power(10., np.arange(15., 20., .5))
 zenith_angles = (np.arange(0, 90, args.delta_zenith) + .5 * args.delta_zenith) * units.deg
+corsika_ids = {
+    'proton': 14,
+    'helium': 402,
+    'carbon': 1206,
+    'oxygen': 1608,
+    'iron': 5626
+}
 
 h_grid = np.linspace(50 * 1e3 * 1e2, 0, 500)    # altitudes from 0 to 50 km (in cm)
 X_grid = mceq.density_model.h2X(h_grid)
@@ -65,6 +72,7 @@ for i_energy, energy in enumerate(energies):
             ax1_1 = fig1.add_subplot(1, len(energies), i_energy + 1, sharey=axes_array[0], sharex=axes_array[0])
         else:
             ax1_1 = fig1.add_subplot(2, len(energies) // 2 + len(energies) % 2, i_energy + 1, sharey=axes_array[0], sharex=axes_array[0])
+    print(i_energy, energy)
     axes_array.append(ax1_1)
     ax1_1.grid()
     ax1_1.set_xscale('log')
@@ -73,11 +81,7 @@ for i_energy, energy in enumerate(energies):
     ax1_1.set_xlabel(r'$E_\mu [eV]$')
     ax1_1.set_ylabel(r'$\Phi (E_\mu | E_{CR})$')
     ax1_1.set_title(r'$log_{10}(E_{CR}/eV)=%.1f$' % (np.log10(energy)))
-    print(i_energy, energy)
-    if args.cr_primary == 'proton':
-        mceq.set_single_primary_particle(energy / 1.e9, pdg_id=2212)
-    elif args.cr_primary == 'iron':
-        mceq.set_single_primary_particle(energy / 1.e9, corsika_id=5626)
+    mceq.set_single_primary_particle(energy / 1.e9, corsika_id=corsika_ids[args.cr_primary])
     for i_zenith, zenith in enumerate(zenith_angles):
         mceq.set_theta_deg(zenith / units.deg)
         mceq.solve(int_grid=X_grid)
