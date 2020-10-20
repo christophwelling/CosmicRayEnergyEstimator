@@ -53,9 +53,11 @@ class CosmicRayEnergyEstimator():
         log_bin_size = log_cr_energies[1] - log_cr_energies[0]
         probabilities = np.zeros_like(log_cr_energies)
         for i_energy, log_cr_energy in enumerate(log_cr_energies):
-            bin_size = np.power(10., log_cr_energy + .5 * log_bin_size) - np.power(10., log_cr_energy - .5 * log_bin_size)
+            mini_bins = np.arange(log_cr_energy - .45 * log_bin_size, log_cr_energy + .5 * log_bin_size, .1 * log_bin_size)
+            mini_bin_sizes = np.power(10., mini_bins + .05 * log_bin_size) - np.power(10., mini_bins - .05 * log_bin_size)
             for primary in self.__corsika_ids.keys():
-                probabilities[i_energy] += bin_size * self.get_cosmic_ray_spectrum(log_cr_energy, self.__corsika_ids[primary]) * self.get_shower_muon_flux(log_cr_energy, log_mu_energy, zenith, primary)
+                n_particles = np.sum(mini_bin_sizes * self.get_cosmic_ray_spectrum(mini_bins, self.__corsika_ids[primary]))
+                probabilities[i_energy] += n_particles * self.get_shower_muon_flux(log_cr_energy, log_mu_energy, zenith, primary)
         return probabilities / np.sum(probabilities)
 
     def draw_plots(self, zenith):
@@ -94,7 +96,7 @@ class CosmicRayEnergyEstimator():
         cosmic_ray_flux = self.get_cosmic_ray_spectrum(cr_energy_bins)
         ax1_3.plot(cr_energy_bins, cosmic_ray_flux, '-x', color='C0', label='total')
         for i_primary, primary in enumerate(self.__corsika_ids.keys()):
-            ax1_3.plot(cr_energy_bins, self.get_cosmic_ray_spectrum(cr_energy_bins, self.__corsika_ids[primary]), '-x', color='C{}'.format(i_primary + 1), label=primary)
+            ax1_3.plot(cr_energy_bins, self.get_cosmic_ray_spectrum(cr_energy_bins, self.__corsika_ids[primary]), 'x', color='C{}'.format(i_primary + 1), label=primary, linestyle=self.__linestyles[i_primary])
         ax1_3.set_ylim([.5 * np.min(cosmic_ray_flux), 1.5 * np.max(cosmic_ray_flux)])
         ax1_1.legend(ncol=3)
         ax1_3.legend()
