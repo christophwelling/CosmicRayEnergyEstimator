@@ -50,6 +50,26 @@ class CosmicRayEnergyEstimator():
         return muon_fluxes[np.argmin(np.abs(log_mu_energy - mu_energies))]
 
     def get_conditional_cr_probability(self, log_mu_energy, log_cr_energies, zenith):
+        """
+        Returns the probabilities that a muon with a specific energy and zenith angle was created by an air shower with
+        the given cosmic ray energies
+
+        Parameters:
+        ------------------
+        log_mu_energy: float
+            log10 of the energy of the muon (in eV)
+        log_cr_energies: array of floats
+            log10 of the cosmic ray energy bins (in eV) for which the probabilities shall be calculated. The bins need to be
+            evenly spaced in log space.
+        zenith: float
+            Zenith angle (in radions) of the muon
+
+        Returns:
+        ----------------
+        array of floats: Probabilities that the muon stems from an air shower with the cosmic ray energies specified
+            in the log_cr_energies parameter. The probabilites are normalized so that their sum is 1, which means that
+            cosmic ray energies not in log_cr_energies are not considered.
+        """
         log_bin_size = log_cr_energies[1] - log_cr_energies[0]
         probabilities = np.zeros_like(log_cr_energies)
         for i_energy, log_cr_energy in enumerate(log_cr_energies):

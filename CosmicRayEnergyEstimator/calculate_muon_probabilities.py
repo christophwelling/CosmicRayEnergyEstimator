@@ -11,7 +11,7 @@ parser.add_argument(
     '--cr_primary',
     type=str,
     default='proton',
-    help='Assumed particle type of the primary cosmic ray. Options are proton, helium, oxygen and iron'
+    help='Assumed particle type of the primary cosmic ray. Options are proton, helium, carbon, oxygen and iron'
 )
 parser.add_argument(
     '--delta_zenith',
@@ -31,15 +31,39 @@ parser.add_argument(
     default=3200,
     help='Observer height above sea level'
 )
+parser.add_argument(
+    '--min_energy',
+    type=float,
+    default=15,
+    help='Log10 of the smallest energy bin for which muon flux is calculated, in eV'
+)
+parser.add_argument(
+    '--max_energy',
+    type=float,
+    default=20,
+    help='Log 10 of the largest energy bin for which muon flux is calculated, in eV'
+)
+parser.add_argument(
+    '--energy_bin_size',
+    type=float,
+    default=.5,
+    help='Spacing of the energy bins in log10(E/eV) '
+)
+parser.add_argument(
+    '--interaction_model',
+    type=str,
+    default='SIBYLL23C',
+    help='Name of the interaction model to use for calculating the muon fluxes'
+)
 args = parser.parse_args()
 linestyles = ['-', '--', ':']
 
 mceq = MCEq.core.MCEqRun(
-    interaction_model='SIBYLL23C',
+    interaction_model=args.interaction_model,
     primary_model=(crflux.models.HillasGaisser2012, 'H3a'),
     theta_deg=85.
 )
-energies = np.power(10., np.arange(15., 20., .5))
+energies = np.power(10., np.arange(args.min_energy, args.max_energy, args.energy_bin_size))
 zenith_angles = (np.arange(0, 90, args.delta_zenith) + .5 * args.delta_zenith) * units.deg
 corsika_ids = {
     'proton': 14,
@@ -77,7 +101,6 @@ for i_energy, energy in enumerate(energies):
     ax1_1.grid()
     ax1_1.set_xscale('log')
     ax1_1.set_yscale('log')
-    # ax1_1.set_ylim([1.e-22, .1])
     ax1_1.set_xlabel(r'$E_\mu [eV]$')
     ax1_1.set_ylabel(r'$\Phi (E_\mu | E_{CR})$')
     ax1_1.set_title(r'$log_{10}(E_{CR}/eV)=%.1f$' % (np.log10(energy)))
@@ -87,7 +110,6 @@ for i_energy, energy in enumerate(energies):
         mceq.solve(int_grid=X_grid)
         muon_flux = (mceq.get_solution('mu+', grid_idx=alt_idx) +
                      mceq.get_solution('mu-', grid_idx=alt_idx))
-        # muon_flux /= np.sum(muon_flux)
         label = r'$\theta=%.1f ^\circ$' % (zenith / units.deg)
         ax1_1.plot(mceq.e_grid * units.GeV, muon_flux, label=label, color='C{}'.format(i_zenith))
         muon_fluxes[i_energy, i_zenith] = muon_flux
