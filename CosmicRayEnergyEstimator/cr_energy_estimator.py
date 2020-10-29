@@ -20,7 +20,20 @@ class CosmicRayEnergyEstimator():
             'oxygen': pickle.load(open('{}/muon_energy_probabilities_oxygen.p'.format(file_location), 'rb')),
             'iron': pickle.load(open('{}/muon_energy_probabilities_iron.p'.format(file_location), 'rb'))
         }
-        self.__cosmic_ray_model = crflux.models.HillasGaisser2012()
+        self.__gsf_table = np.loadtxt('{}/gsf_data_table.txt'.format(file_location), comments='#', delimiter=' ')
+        self.__cosmic_ray_energy_table = np.log10(self.__gsf_table[:, 0] * units.GeV)
+        self.__cosmic_rayflux = np.zeros((4, self.__cosmic_ray_energy_table.shape[0]))
+        self.__cosmic_rayflux[0] = self.__gsf_table[:, 1]
+        self.__cosmic_rayflux[1] = self.__gsf_table[:, 2]
+        self.__cosmic_rayflux[2] = np.sum(self.__gsf_table[:, 3: 10], axis=1)
+        self.__cosmic_rayflux[3] = np.sum(self.__gsf_table[:, 10:], axis=1)
+        self.__flux_ids = {
+            'proton': 0,
+            'helium': 1,
+            'carbon': 2,
+            'oxygen': 2,
+            'iron': 3
+        }
         self.__corsika_ids = {
             'proton': 14,
             'helium': 402,
@@ -35,11 +48,14 @@ class CosmicRayEnergyEstimator():
         mu_energies = self.__a_priori_fluxes['energies']
         return mu_spectra[np.argmin(np.abs(log_energy - mu_energies))]
 
-    def get_cosmic_ray_spectrum(self, log_energy, corsika_id=None):
-        if corsika_id is None:
-            return self.__cosmic_ray_model.total_flux(np.power(10., log_energy) / units.GeV)
+    def get_cosmic_ray_spectrum(self, log_energy, element=None):
+        index = np.zeros(log_energy.shape, dtype=int)
+        for i_energy, energy in enumerate(log_energy):
+            index[i_energy] = np.argmin(np.abs(energy - self.__cosmic_ray_energy_table))
+        if element is None:
+            return np.sum(self.__cosmic_rayflux, axis=0)[index]
         else:
-            return self.__cosmic_ray_model.nucleus_flux(corsika_id, np.power(10., log_energy) / units.GeV)
+            return self.__cosmic_rayflux[self.__flux_ids[element], index]
 
     def get_shower_muon_flux(self, log_cr_energy, log_mu_energy, zenith, primary='proton'):
         cr_energies = self.__mu_spectrum[primary]['cr_energies']
@@ -76,7 +92,7 @@ class CosmicRayEnergyEstimator():
             mini_bins = np.arange(log_cr_energy - .45 * log_bin_size, log_cr_energy + .5 * log_bin_size, .1 * log_bin_size)
             mini_bin_sizes = np.power(10., mini_bins + .05 * log_bin_size) - np.power(10., mini_bins - .05 * log_bin_size)
             for primary in self.__corsika_ids.keys():
-                n_particles = np.sum(mini_bin_sizes * self.get_cosmic_ray_spectrum(mini_bins, self.__corsika_ids[primary]))
+                n_particles = np.sum(mini_bin_sizes * self.get_cosmic_ray_spectrum(mini_bins, primary))
                 probabilities[i_energy] += n_particles * self.get_shower_muon_flux(log_cr_energy, log_mu_energy, zenith, primary)
         return probabilities / np.sum(probabilities)
 
@@ -116,7 +132,7 @@ class CosmicRayEnergyEstimator():
         cosmic_ray_flux = self.get_cosmic_ray_spectrum(cr_energy_bins)
         ax1_3.plot(cr_energy_bins, cosmic_ray_flux, '-x', color='C0', label='total')
         for i_primary, primary in enumerate(self.__corsika_ids.keys()):
-            ax1_3.plot(cr_energy_bins, self.get_cosmic_ray_spectrum(cr_energy_bins, self.__corsika_ids[primary]), 'x', color='C{}'.format(i_primary + 1), label=primary, linestyle=self.__linestyles[i_primary])
+            ax1_3.plot(cr_energy_bins, self.get_cosmic_ray_spectrum(cr_energy_bins, primary), 'x', color='C{}'.format(i_primary + 1), label=primary, linestyle=self.__linestyles[i_primary])
         ax1_3.set_ylim([.5 * np.min(cosmic_ray_flux), 1.5 * np.max(cosmic_ray_flux)])
         ax1_1.legend(ncol=3)
         ax1_3.legend()
