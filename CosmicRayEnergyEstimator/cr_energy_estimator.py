@@ -1,12 +1,13 @@
 import numpy as np
 import matplotlib.pyplot as plt
 import matplotlib.lines as mlines
+import scipy.interpolate
 import pickle
 import crflux.models
 from NuRadioReco.utilities import units
 
 
-class CosmicRayEnergyEstimator():
+class CosmicRayEnergyEstimator:
 
     def __init__(
         self,
@@ -60,10 +61,15 @@ class CosmicRayEnergyEstimator():
     def get_shower_muon_flux(self, log_cr_energy, log_mu_energy, zenith, primary='proton'):
         cr_energies = self.__mu_spectrum[primary]['cr_energies']
         mu_energies = self.__mu_spectrum[primary]['mu_energies']
+        muon_flux = self.__mu_spectrum[primary]['muon_flux']
         i_zenith = np.argmin(np.abs(zenith - self.__mu_spectrum[primary]['zeniths']))
-        i_energy = np.argmin(np.abs(log_cr_energy - cr_energies))
-        muon_fluxes = self.__mu_spectrum[primary]['muon_flux'][i_energy, i_zenith]
-        return muon_fluxes[np.argmin(np.abs(log_mu_energy - mu_energies))]
+        flux_interpolation = scipy.interpolate.interp2d(
+            mu_energies,
+            cr_energies,
+            np.log10(np.abs(muon_flux[:, i_zenith])),
+            kind='quintic'
+        )
+        return 10.**flux_interpolation(log_mu_energy, log_cr_energy)
 
     def get_conditional_cr_probability(self, log_mu_energy, log_cr_energies, zenith):
         """
